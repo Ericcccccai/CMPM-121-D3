@@ -91,9 +91,9 @@ function fromCell(i: number, j: number) {
   ]);
 }
 
-function cellId(i: number, j: number) {
-  return `${i},${j}`;
-}
+// function cellId(i: number, j: number) {
+//   return `${i},${j}`;
+// }
 
 function distance(a: { i: number; j: number }, b: { i: number; j: number }) {
   return Math.max(Math.abs(a.i - b.i), Math.abs(a.j - b.j));
@@ -111,6 +111,11 @@ function spawnValue(i: number, j: number): number | null {
   return null;
 }
 
+// 🟢 Step 13: clear old token layers before redrawing
+map.eachLayer((layer) => {
+  if (isTokenRect(layer)) map.removeLayer(layer);
+});
+
 // === 8. Draw Grid & Tokens ===
 function drawGrid() {
   map.eachLayer((layer) => {
@@ -124,8 +129,8 @@ function drawGrid() {
       const j = playerCell.j + dj;
 
       const bounds = fromCell(i, j);
-      const id = cellId(i, j);
-      if (removedTokens.has(id)) continue;
+      //const id = cellId(i, j);
+      //if (removedTokens.has(id)) continue;
 
       const value = spawnValue(i, j);
       if (value === null) continue;
@@ -159,14 +164,14 @@ function drawGrid() {
         }
         if (heldToken === null) {
           heldToken = value;
-          removedTokens.add(id);
+          //removedTokens.add(id);
           updateStatus();
           drawGrid();
           return;
         }
         if (heldToken === value) {
           heldToken *= 2;
-          removedTokens.add(id);
+          //removedTokens.add(id);
           updateStatus();
           drawGrid();
           return;
