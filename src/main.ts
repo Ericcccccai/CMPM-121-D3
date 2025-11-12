@@ -195,3 +195,52 @@ resetBtn.onclick = () => {
   drawGrid();
 };
 controlPanelDiv.append(resetBtn);
+
+// === 11. Player Movement Controls ===
+const moveButtonsDiv = document.createElement("div");
+moveButtonsDiv.style.marginTop = "1rem";
+moveButtonsDiv.innerHTML = `
+  <button id="moveNorth">⬆️ North</button>
+  <div>
+    <button id="moveWest">⬅️ West</button>
+    <button id="moveEast">➡️ East</button>
+  </div>
+  <button id="moveSouth">⬇️ South</button>
+`;
+controlPanelDiv.append(moveButtonsDiv);
+
+// Helper: move player by delta
+function movePlayer(di: number, dj: number) {
+  // update player's cell coordinates
+  playerCell.i += di;
+  playerCell.j += dj;
+
+  // recenter map and marker
+  const newCenter = fromCell(playerCell.i, playerCell.j).getCenter();
+  map.setView(newCenter);
+
+  // move player marker visually
+  playerMarker.setLatLng(newCenter);
+
+  // redraw visible grid
+  drawGrid();
+  updateStatus();
+}
+
+// Attach button handlers
+document.getElementById("moveNorth")!.addEventListener(
+  "click",
+  () => movePlayer(1, 0),
+);
+document.getElementById("moveSouth")!.addEventListener(
+  "click",
+  () => movePlayer(-1, 0),
+);
+document.getElementById("moveWest")!.addEventListener(
+  "click",
+  () => movePlayer(0, -1),
+);
+document.getElementById("moveEast")!.addEventListener(
+  "click",
+  () => movePlayer(0, 1),
+);
