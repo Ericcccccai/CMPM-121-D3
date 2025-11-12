@@ -12,17 +12,16 @@ import "./_leafletWorkaround.ts";
 import luck from "./_luck.ts";
 
 // === 1. Constants & Game Config ===
-const CLASSROOM_LATLNG = leaflet.latLng(
-  36.997936938057016,
-  -122.05703507501151,
-);
+// 🌍 Step 14: Use world origin (LA)
+const WORLD_ORIGIN = leaflet.latLng(34.0522, -118.2437);
+
 const GAMEPLAY_ZOOM_LEVEL = 19;
 const TILE_DEGREES = 0.0001; // about one house
 const NEIGHBORHOOD_SIZE = 10; // how many cells in each direction
 const INTERACTION_RANGE = 3; // how many cells away player can act
 const TARGET_VALUE = 32; // win condition
 
-const playerCell = toCell(CLASSROOM_LATLNG.lat, CLASSROOM_LATLNG.lng);
+const playerCell = toCell(WORLD_ORIGIN.lat, WORLD_ORIGIN.lng);
 
 // === 2. Create UI ===
 const controlPanelDiv = document.createElement("div");
@@ -39,7 +38,7 @@ document.body.append(statusPanelDiv);
 
 // === 3. Create the Map ===
 const map = leaflet.map(mapDiv, {
-  center: CLASSROOM_LATLNG,
+  center: WORLD_ORIGIN,
   zoom: GAMEPLAY_ZOOM_LEVEL,
   minZoom: GAMEPLAY_ZOOM_LEVEL,
   maxZoom: GAMEPLAY_ZOOM_LEVEL,
@@ -57,7 +56,7 @@ leaflet
   .addTo(map);
 
 // === 4. Player Marker ===
-const playerMarker = leaflet.marker(CLASSROOM_LATLNG);
+const playerMarker = leaflet.marker(WORLD_ORIGIN);
 playerMarker.bindTooltip("You are here");
 playerMarker.addTo(map);
 
@@ -74,13 +73,13 @@ function updateStatus() {
 // === 6. Helper: Coordinate ↔ Cell ===
 function toCell(lat: number, lng: number) {
   return {
-    i: Math.floor((lat - CLASSROOM_LATLNG.lat) / TILE_DEGREES),
-    j: Math.floor((lng - CLASSROOM_LATLNG.lng) / TILE_DEGREES),
+    i: Math.floor((lat - WORLD_ORIGIN.lat) / TILE_DEGREES),
+    j: Math.floor((lng - WORLD_ORIGIN.lng) / TILE_DEGREES),
   };
 }
 
 function fromCell(i: number, j: number) {
-  const base = CLASSROOM_LATLNG;
+  const base = WORLD_ORIGIN;
   const lat = base.lat + i * TILE_DEGREES;
   const lng = base.lng + j * TILE_DEGREES;
   const lat2 = base.lat + (i + 1) * TILE_DEGREES;
