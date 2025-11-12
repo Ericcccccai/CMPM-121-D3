@@ -20,7 +20,7 @@ const GAMEPLAY_ZOOM_LEVEL = 19;
 const TILE_DEGREES = 0.0001; // about one house
 const NEIGHBORHOOD_SIZE = 10; // how many cells in each direction
 const INTERACTION_RANGE = 3; // how many cells away player can act
-const TARGET_VALUE = 16; // win condition
+const TARGET_VALUE = 32; // win condition
 
 const playerCell = toCell(CLASSROOM_LATLNG.lat, CLASSROOM_LATLNG.lng);
 
@@ -104,9 +104,10 @@ function spawnValue(i: number, j: number): number | null {
   const r = luck([i, j, "spawn"].toString());
   // 20% chance of token; weighted toward smaller values
   if (r < 0.1) return 1;
-  if (r < 0.15) return 2;
-  if (r < 0.17) return 4;
-  if (r < 0.175) return 8;
+  if (r < 0.18) return 2;
+  if (r < 0.22) return 4;
+  if (r < 0.24) return 8;
+  if (r < 0.245) return 16;
   return null;
 }
 
@@ -116,8 +117,12 @@ function drawGrid() {
     if (isTokenRect(layer)) map.removeLayer(layer);
   });
 
-  for (let i = -NEIGHBORHOOD_SIZE; i <= NEIGHBORHOOD_SIZE; i++) {
-    for (let j = -NEIGHBORHOOD_SIZE; j <= NEIGHBORHOOD_SIZE; j++) {
+  // draw relative to current playerCell
+  for (let di = -NEIGHBORHOOD_SIZE; di <= NEIGHBORHOOD_SIZE; di++) {
+    for (let dj = -NEIGHBORHOOD_SIZE; dj <= NEIGHBORHOOD_SIZE; dj++) {
+      const i = playerCell.i + di;
+      const j = playerCell.j + dj;
+
       const bounds = fromCell(i, j);
       const id = cellId(i, j);
       if (removedTokens.has(id)) continue;
@@ -195,6 +200,11 @@ resetBtn.onclick = () => {
   drawGrid();
 };
 controlPanelDiv.append(resetBtn);
+
+// === 10b. Optional: Redraw when map is panned or zoomed ===
+map.on("moveend", () => {
+  drawGrid();
+});
 
 // === 11. Player Movement Controls ===
 const moveButtonsDiv = document.createElement("div");
