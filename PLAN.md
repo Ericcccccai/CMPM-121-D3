@@ -53,15 +53,15 @@ Gameplay occurs on a grid aligned with latitude-longitude coordinates and persis
 - [x] Clear `main.ts` and start fresh
 - [x] Initialize Leaflet map centered on UCSC classroom coordinates
 - [x] Add player marker
-- [ ] Generate grid cells around player (10×10 window)
-- [ ] Use deterministic hashing (Luck library) to assign token presence/value
-- [ ] Render token numbers or sprites in each cell
-- [ ] Limit interaction range (~3 cells radius)
-- [ ] Implement picking up a token (updates held state + removes from map)
-- [ ] Implement merging mechanic (equal value → double value token)
-- [ ] Update on-screen “Held Token” UI
-- [ ] Detect win condition (token ≥ target value)
-- [ ] Commit: “(D3.a complete)”
+- [x] Generate grid cells around player (10×10 window)
+- [x] Use deterministic hashing (Luck library) to assign token presence/value
+- [x] Render token numbers or sprites in each cell
+- [x] Limit interaction range (~3 cells radius)
+- [x] Implement picking up a token (updates held state + removes from map)
+- [x] Implement merging mechanic (equal value → double value token)
+- [x] Update on-screen “Held Token” UI
+- [x] Detect win condition (token ≥ target value)
+- [x] Commit: “(D3.a complete)”
 
 ---
 
@@ -88,15 +88,15 @@ Gameplay occurs on a grid aligned with latitude-longitude coordinates and persis
 ### Steps
 
 - [x] Add directional buttons (N/S/E/W) to move player one cell per press
-- [ ] Refactor grid rendering into a reusable function (so it updates on move)
-- [ ] When player moves, refresh visible cells around new position
-- [ ] Maintain separate data structure for cell coordinates (i,j pairs)
-- [ ] Convert lat/long ↔ cell ID conversion functions
-- [ ] Handle Leaflet’s `moveend` event to detect scroll completion
-- [ ] Ensure old cells are discarded when off-screen
-- [ ] Keep token logic from D3.a working in new locations
-- [ ] Raise win condition threshold (e.g., token ≥ 32)
-- [ ] Commit: “(D3.b complete)”
+- [x] Refactor grid rendering into a reusable function (so it updates on move)
+- [x] When player moves, refresh visible cells around new position
+- [x] Maintain separate data structure for cell coordinates (i,j pairs)
+- [x] Convert lat/long ↔ cell ID conversion functions
+- [x] Handle Leaflet’s `moveend` event to detect scroll completion
+- [x] Ensure old cells are discarded when off-screen
+- [x] Keep token logic from D3.a working in new locations
+- [x] Raise win condition threshold (e.g., token ≥ 32)
+- [x] Commit: “(D3.b complete)”
 
 ---
 
