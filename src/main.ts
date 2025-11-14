@@ -70,6 +70,21 @@ function updateStatus() {
     : `Held: ${heldToken}${heldToken >= TARGET_VALUE ? " ✅ You win!" : ""}`;
 }
 
+// === 5b. Persistent Cell Memory (D3.c) ===
+// MEMENTO STORAGE: cellId -> { value, collected }
+interface CellState {
+  value: number | null;
+  collected: boolean;
+}
+
+const cellMemory: Record<string, CellState> = {};
+
+// Restore saved world state
+const saved = localStorage.getItem("worldState");
+if (saved) {
+  Object.assign(cellMemory, JSON.parse(saved));
+}
+
 // === 6. Helper: Coordinate ↔ Cell ===
 function toCell(lat: number, lng: number) {
   return {
@@ -90,9 +105,9 @@ function fromCell(i: number, j: number) {
   ]);
 }
 
-// function cellId(i: number, j: number) {
-//   return `${i},${j}`;
-// }
+function cellId(i: number, j: number) {
+  return `${i},${j}`;
+}
 
 function distance(a: { i: number; j: number }, b: { i: number; j: number }) {
   return Math.max(Math.abs(a.i - b.i), Math.abs(a.j - b.j));
@@ -112,13 +127,13 @@ function spawnValue(i: number, j: number): number | null {
 
 // 🟢 Step 13: clear old token layers before redrawing
 map.eachLayer((layer) => {
-  if (isTokenRect(layer)) map.removeLayer(layer);
+  if (isTokenLayer(layer)) map.removeLayer(layer);
 });
 
 // === 8. Draw Grid & Tokens ===
 function drawGrid() {
   map.eachLayer((layer) => {
-    if (isTokenRect(layer)) map.removeLayer(layer);
+    if (isTokenLayer(layer)) map.removeLayer(layer);
   });
 
   // draw relative to current playerCell
@@ -131,28 +146,48 @@ function drawGrid() {
       //const id = cellId(i, j);
       //if (removedTokens.has(id)) continue;
 
-      const value = spawnValue(i, j);
+      const id = cellId(i, j);
+
+      // If cell exists in memory:
+      let value: number | null;
+
+      if (cellMemory[id]) {
+        // If collected before → it's empty now
+        if (cellMemory[id].collected) {
+          continue;
+        }
+        value = cellMemory[id].value;
+      } else {
+        // No memory → generate and save initial state
+        value = spawnValue(i, j);
+        cellMemory[id] = { value, collected: false };
+      }
+
+      // If no value, skip
       if (value === null) continue;
 
-      const rect: leaflet.Rectangle & { _isTokenRect: boolean } = Object.assign(
+      const rect = Object.assign(
         leaflet.rectangle(bounds, {
           color: "gray",
           weight: 1,
           fillOpacity: 0.05,
         }),
-        { _isTokenRect: true },
+        { _isTokenLayer: true as const },
       );
 
       rect.addTo(map);
 
       const center = bounds.getCenter();
-      const marker = leaflet.marker(center, {
-        icon: leaflet.divIcon({
-          className: "tokenLabel",
-          html: `<div style="font-weight:700;color:black;">${value}</div>`,
-          iconSize: [1, 1],
+      const marker = Object.assign(
+        leaflet.marker(center, {
+          icon: leaflet.divIcon({
+            className: "tokenLabel",
+            html: `<div style="font-weight:700;color:black;">${value}</div>`,
+            iconSize: [1, 1],
+          }),
         }),
-      });
+        { _isTokenLayer: true as const },
+      );
 
       marker.addTo(map);
 
@@ -163,18 +198,28 @@ function drawGrid() {
         }
         if (heldToken === null) {
           heldToken = value;
-          //removedTokens.add(id);
+
+          const id = cellId(i, j);
+          cellMemory[id].collected = true; // mark collected
+          localStorage.setItem("worldState", JSON.stringify(cellMemory));
+
           updateStatus();
           drawGrid();
           return;
         }
+
         if (heldToken === value) {
           heldToken *= 2;
-          //removedTokens.add(id);
+
+          const id = cellId(i, j);
+          cellMemory[id].collected = true;
+          localStorage.setItem("worldState", JSON.stringify(cellMemory));
+
           updateStatus();
           drawGrid();
           return;
         }
+
         alert("You can only merge tokens of the same value!");
       };
 
@@ -184,10 +229,11 @@ function drawGrid() {
   }
 }
 
-function isTokenRect(layer: leaflet.Layer): layer is leaflet.Rectangle & {
-  _isTokenRect: boolean;
-} {
-  return (layer as unknown as { _isTokenRect?: boolean })._isTokenRect === true;
+function isTokenLayer(
+  layer: leaflet.Layer,
+): layer is leaflet.Layer & { _isTokenLayer: true } {
+  return "_isTokenLayer" in layer &&
+    (layer as { _isTokenLayer: true })._isTokenLayer === true;
 }
 
 // === 9. Initialize ===
