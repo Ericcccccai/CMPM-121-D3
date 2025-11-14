@@ -121,13 +121,13 @@ Gameplay occurs on a grid aligned with latitude-longitude coordinates and persis
 ### Steps
 
 - [x] Create `Cell` type/interface for (i,j) coordinates
-- [ ] Replace any direct arrays with a `Map<CellID, Token>` structure
-- [ ] Implement saveCellState(cellID, tokenValue) → store in Map
-- [ ] Implement restoreCellState(cellID) → read from Map when redrawing
-- [ ] Remove unused cell objects when off-screen (Flyweight)
-- [ ] Use Memento-style serialization function (e.g., JSON save of Map)
-- [ ] Test scrolling away and back → cells retain token state
-- [ ] Commit: “(D3.c complete)”
+- [x] Replace any direct arrays with a `Map<CellID, Token>` structure
+- [x] Implement saveCellState(cellID, tokenValue) → store in Map
+- [x] Implement restoreCellState(cellID) → read from Map when redrawing
+- [x] Remove unused cell objects when off-screen (Flyweight)
+- [x] Use Memento-style serialization function (e.g., JSON save of Map)
+- [x] Test scrolling away and back → cells retain token state
+- [x] Commit: “(D3.c complete)”
 
 ---
 
