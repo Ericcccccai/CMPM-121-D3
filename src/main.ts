@@ -11,19 +11,24 @@ import "./_leafletWorkaround.ts";
 // Deterministic randomness
 import luck from "./_luck.ts";
 
-// === 1. Constants & Game Config ===
-// 🌍 Step 14: Use world origin (LA)
+// =====================================================
+// 1. CONSTANTS
+// =====================================================
 const WORLD_ORIGIN = leaflet.latLng(34.0522, -118.2437);
-
 const GAMEPLAY_ZOOM_LEVEL = 19;
-const TILE_DEGREES = 0.0001; // about one house
-const NEIGHBORHOOD_SIZE = 10; // how many cells in each direction
-const INTERACTION_RANGE = 3; // how many cells away player can act
-const TARGET_VALUE = 32; // win condition
+const TILE_DEGREES = 0.0001;
+const NEIGHBORHOOD_SIZE = 10;
+const INTERACTION_RANGE = 3;
+const TARGET_VALUE = 32;
 
+// =====================================================
+// 2. PLAYER CELL (must come after constants)
+// =====================================================
 const playerCell = toCell(WORLD_ORIGIN.lat, WORLD_ORIGIN.lng);
 
-// === 2. Create UI ===
+// =====================================================
+// 3. UI CREATION
+// =====================================================
 const controlPanelDiv = document.createElement("div");
 controlPanelDiv.id = "controlPanel";
 document.body.append(controlPanelDiv);
@@ -36,7 +41,9 @@ const statusPanelDiv = document.createElement("div");
 statusPanelDiv.id = "statusPanel";
 document.body.append(statusPanelDiv);
 
-// === 3. Create the Map ===
+// =====================================================
+// 4. MAP INITIALIZATION
+// =====================================================
 const map = leaflet.map(mapDiv, {
   center: WORLD_ORIGIN,
   zoom: GAMEPLAY_ZOOM_LEVEL,
@@ -55,14 +62,18 @@ leaflet
   })
   .addTo(map);
 
-// === 4. Player Marker ===
+// =====================================================
+// 5. PLAYER MARKER
+// =====================================================
 const playerMarker = leaflet.marker(WORLD_ORIGIN);
 playerMarker.bindTooltip("You are here");
 playerMarker.addTo(map);
 
-// === 5. Game State ===
+// =====================================================
+// 6. GAME STATE + STATUS DISPLAY
+// =====================================================
 let heldToken: number | null = null;
-const removedTokens = new Set<string>(); // remember which cells were emptied
+const removedTokens = new Set<string>();
 
 function updateStatus() {
   statusPanelDiv.innerHTML = heldToken === null
@@ -70,8 +81,9 @@ function updateStatus() {
     : `Held: ${heldToken}${heldToken >= TARGET_VALUE ? " ✅ You win!" : ""}`;
 }
 
-// === 5b. Persistent Cell Memory (D3.c) ===
-// MEMENTO STORAGE: cellId -> { value, collected }
+// =====================================================
+// 7. CELL MEMORY (D3c persistent world state)
+// =====================================================
 interface CellState {
   value: number | null;
   collected: boolean;
@@ -79,13 +91,14 @@ interface CellState {
 
 const cellMemory: Record<string, CellState> = {};
 
-// Restore saved world state
 const saved = localStorage.getItem("worldState");
 if (saved) {
   Object.assign(cellMemory, JSON.parse(saved));
 }
 
-// === 6. Helper: Coordinate ↔ Cell ===
+// =====================================================
+// 8. HELPER FUNCTIONS (coordinate math, id, distance)
+// =====================================================
 function toCell(lat: number, lng: number) {
   return {
     i: Math.floor((lat - WORLD_ORIGIN.lat) / TILE_DEGREES),
@@ -113,10 +126,11 @@ function distance(a: { i: number; j: number }, b: { i: number; j: number }) {
   return Math.max(Math.abs(a.i - b.i), Math.abs(a.j - b.j));
 }
 
-// === 7. Deterministic Token Spawn ===
+// =====================================================
+// 9. TOKEN GENERATION
+// =====================================================
 function spawnValue(i: number, j: number): number | null {
   const r = luck([i, j, "spawn"].toString());
-  // 20% chance of token; weighted toward smaller values
   if (r < 0.1) return 1;
   if (r < 0.18) return 2;
   if (r < 0.22) return 4;
@@ -125,45 +139,46 @@ function spawnValue(i: number, j: number): number | null {
   return null;
 }
 
-// 🟢 Step 13: clear old token layers before redrawing
+// =====================================================
+// 10. TOKEN LAYER TYPE GUARD
+// =====================================================
+function isTokenLayer(
+  layer: leaflet.Layer,
+): layer is leaflet.Layer & { _isTokenLayer: true } {
+  return "_isTokenLayer" in layer &&
+    (layer as { _isTokenLayer: true })._isTokenLayer === true;
+}
+
+// =====================================================
+// 11. GRID DRAWING
+// =====================================================
 map.eachLayer((layer) => {
   if (isTokenLayer(layer)) map.removeLayer(layer);
 });
 
-// === 8. Draw Grid & Tokens ===
 function drawGrid() {
   map.eachLayer((layer) => {
     if (isTokenLayer(layer)) map.removeLayer(layer);
   });
 
-  // draw relative to current playerCell
   for (let di = -NEIGHBORHOOD_SIZE; di <= NEIGHBORHOOD_SIZE; di++) {
     for (let dj = -NEIGHBORHOOD_SIZE; dj <= NEIGHBORHOOD_SIZE; dj++) {
       const i = playerCell.i + di;
       const j = playerCell.j + dj;
 
       const bounds = fromCell(i, j);
-      //const id = cellId(i, j);
-      //if (removedTokens.has(id)) continue;
-
       const id = cellId(i, j);
 
-      // If cell exists in memory:
       let value: number | null;
 
       if (cellMemory[id]) {
-        // If collected before → it's empty now
-        if (cellMemory[id].collected) {
-          continue;
-        }
+        if (cellMemory[id].collected) continue;
         value = cellMemory[id].value;
       } else {
-        // No memory → generate and save initial state
         value = spawnValue(i, j);
         cellMemory[id] = { value, collected: false };
       }
 
-      // If no value, skip
       if (value === null) continue;
 
       const rect = Object.assign(
@@ -174,7 +189,6 @@ function drawGrid() {
         }),
         { _isTokenLayer: true as const },
       );
-
       rect.addTo(map);
 
       const center = bounds.getCenter();
@@ -188,7 +202,6 @@ function drawGrid() {
         }),
         { _isTokenLayer: true as const },
       );
-
       marker.addTo(map);
 
       const handleClick = () => {
@@ -198,28 +211,20 @@ function drawGrid() {
         }
         if (heldToken === null) {
           heldToken = value;
-
-          const id = cellId(i, j);
-          cellMemory[id].collected = true; // mark collected
-          localStorage.setItem("worldState", JSON.stringify(cellMemory));
-
-          updateStatus();
-          drawGrid();
-          return;
-        }
-
-        if (heldToken === value) {
-          heldToken *= 2;
-
-          const id = cellId(i, j);
           cellMemory[id].collected = true;
           localStorage.setItem("worldState", JSON.stringify(cellMemory));
-
           updateStatus();
           drawGrid();
           return;
         }
-
+        if (heldToken === value) {
+          heldToken *= 2;
+          cellMemory[id].collected = true;
+          localStorage.setItem("worldState", JSON.stringify(cellMemory));
+          updateStatus();
+          drawGrid();
+          return;
+        }
         alert("You can only merge tokens of the same value!");
       };
 
@@ -229,18 +234,15 @@ function drawGrid() {
   }
 }
 
-function isTokenLayer(
-  layer: leaflet.Layer,
-): layer is leaflet.Layer & { _isTokenLayer: true } {
-  return "_isTokenLayer" in layer &&
-    (layer as { _isTokenLayer: true })._isTokenLayer === true;
-}
-
-// === 9. Initialize ===
+// =====================================================
+// 12. INITIALIZATION
+// =====================================================
 updateStatus();
 drawGrid();
 
-// === 10. (Optional) reset button ===
+// =====================================================
+// 13. RESET BUTTON
+// =====================================================
 const resetBtn = document.createElement("button");
 resetBtn.innerText = "Reset Game";
 resetBtn.onclick = () => {
@@ -251,12 +253,16 @@ resetBtn.onclick = () => {
 };
 controlPanelDiv.append(resetBtn);
 
-// === 10b. Optional: Redraw when map is panned or zoomed ===
+// =====================================================
+// 14. REDRAW ON MAP MOVE
+// =====================================================
 map.on("moveend", () => {
   drawGrid();
 });
 
-// === 11. Player Movement Controls ===
+// =====================================================
+// 15. PLAYER MOVEMENT CONTROLS
+// =====================================================
 const moveButtonsDiv = document.createElement("div");
 moveButtonsDiv.style.marginTop = "1rem";
 moveButtonsDiv.innerHTML = `
@@ -269,25 +275,18 @@ moveButtonsDiv.innerHTML = `
 `;
 controlPanelDiv.append(moveButtonsDiv);
 
-// Helper: move player by delta
 function movePlayer(di: number, dj: number) {
-  // update player's cell coordinates
   playerCell.i += di;
   playerCell.j += dj;
 
-  // recenter map and marker
   const newCenter = fromCell(playerCell.i, playerCell.j).getCenter();
   map.setView(newCenter);
-
-  // move player marker visually
   playerMarker.setLatLng(newCenter);
 
-  // redraw visible grid
   drawGrid();
   updateStatus();
 }
 
-// Attach button handlers
 document.getElementById("moveNorth")!.addEventListener(
   "click",
   () => movePlayer(1, 0),
