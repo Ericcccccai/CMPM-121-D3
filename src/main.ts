@@ -12,6 +12,90 @@ import "./_leafletWorkaround.ts";
 import luck from "./_luck.ts";
 
 // =====================================================
+// MovementController INTERFACE (Facade core)
+// =====================================================
+interface MovementController {
+  start(): void;
+  stop(): void;
+}
+
+// =====================================================
+// Movement System (FACADE)
+// =====================================================
+class MovementSystem {
+  private current: MovementController | null = null;
+
+  setController(controller: MovementController) {
+    // Stop old controller if exists
+    if (this.current) {
+      this.current.stop();
+    }
+
+    // Assign and start new controller
+    this.current = controller;
+    this.current.start();
+  }
+
+  get activeController() {
+    return this.current;
+  }
+}
+
+// Create GLOBAL movement system instance
+const movementSystem = new MovementSystem();
+
+// =====================================================
+// Button-based Movement Controller
+// =====================================================
+class ButtonMovementController implements MovementController {
+  private handlerNorth = () => movePlayer(1, 0);
+  private handlerSouth = () => movePlayer(-1, 0);
+  private handlerWest = () => movePlayer(0, -1);
+  private handlerEast = () => movePlayer(0, 1);
+
+  start() {
+    document.getElementById("moveNorth")?.addEventListener(
+      "click",
+      this.handlerNorth,
+    );
+    document.getElementById("moveSouth")?.addEventListener(
+      "click",
+      this.handlerSouth,
+    );
+    document.getElementById("moveWest")?.addEventListener(
+      "click",
+      this.handlerWest,
+    );
+    document.getElementById("moveEast")?.addEventListener(
+      "click",
+      this.handlerEast,
+    );
+  }
+
+  stop() {
+    document.getElementById("moveNorth")?.removeEventListener(
+      "click",
+      this.handlerNorth,
+    );
+    document.getElementById("moveSouth")?.removeEventListener(
+      "click",
+      this.handlerSouth,
+    );
+    document.getElementById("moveWest")?.removeEventListener(
+      "click",
+      this.handlerWest,
+    );
+    document.getElementById("moveEast")?.removeEventListener(
+      "click",
+      this.handlerEast,
+    );
+  }
+}
+
+// Create instance
+const buttonMovement = new ButtonMovementController();
+
+// =====================================================
 // 1. CONSTANTS
 // =====================================================
 const WORLD_ORIGIN = leaflet.latLng(34.0522, -118.2437);
@@ -78,6 +162,69 @@ function updateStatus() {
   statusPanelDiv.innerHTML = heldToken === null
     ? "Held: —"
     : `Held: ${heldToken}${heldToken >= TARGET_VALUE ? " ✅ You win!" : ""}`;
+}
+
+// =====================================================
+// 7d. GEOLOCATION-BASED MOVEMENT IMPLEMENTATION (D3d Step 3)
+// =====================================================
+
+class GeolocationMovementController implements MovementController {
+  private watchId: number | null = null;
+  private lastLat: number | null = null;
+  private lastLng: number | null = null;
+
+  start() {
+    if (!("geolocation" in navigator)) {
+      alert("Geolocation not supported on this device.");
+      return;
+    }
+
+    // Start tracking
+    this.watchId = navigator.geolocation.watchPosition(
+      (pos) => this.handlePosition(pos),
+      (err) => console.error("Geolocation error:", err),
+      {
+        enableHighAccuracy: true,
+        maximumAge: 1000,
+        timeout: 5000,
+      },
+    );
+  }
+
+  stop() {
+    if (this.watchId !== null) {
+      navigator.geolocation.clearWatch(this.watchId);
+      this.watchId = null;
+    }
+  }
+
+  private handlePosition(pos: GeolocationPosition) {
+    const lat = pos.coords.latitude;
+    const lng = pos.coords.longitude;
+
+    // First reading → store and wait
+    if (this.lastLat === null || this.lastLng === null) {
+      this.lastLat = lat;
+      this.lastLng = lng;
+      return;
+    }
+
+    // Convert GPS to cell coordinates
+    const oldCell = toCell(this.lastLat, this.lastLng);
+    const newCell = toCell(lat, lng);
+
+    const di = newCell.i - oldCell.i;
+    const dj = newCell.j - oldCell.j;
+
+    // Only move when crossing tile boundaries
+    if (di !== 0 || dj !== 0) {
+      movePlayer(di, dj);
+    }
+
+    // Update stored GPS
+    this.lastLat = lat;
+    this.lastLng = lng;
+  }
 }
 
 // =====================================================
@@ -256,6 +403,26 @@ resetBtn.onclick = () => {
 controlPanelDiv.append(resetBtn);
 
 // =====================================================
+// 13b. Add switch button for movement modes (D3d Step 4)
+// =====================================================
+const switchBtn = document.createElement("button");
+switchBtn.innerText = " Switch to Geolocation Movement";
+controlPanelDiv.append(switchBtn);
+
+let usingGeo = false;
+
+switchBtn.onclick = () => {
+  if (usingGeo) {
+    movementSystem.setController(buttonMovement);
+    switchBtn.innerText = "Switch to Geolocation Movement";
+  } else {
+    movementSystem.setController(new GeolocationMovementController());
+    switchBtn.innerText = "Switch to Button Movement";
+  }
+  usingGeo = !usingGeo;
+};
+
+// =====================================================
 // 14. REDRAW ON MAP MOVE
 // =====================================================
 map.on("moveend", () => {
@@ -276,6 +443,7 @@ moveButtonsDiv.innerHTML = `
   <button id="moveSouth">⬇️ South</button>
 `;
 controlPanelDiv.append(moveButtonsDiv);
+movementSystem.setController(buttonMovement);
 
 function movePlayer(di: number, dj: number) {
   playerCell.i += di;
@@ -288,20 +456,3 @@ function movePlayer(di: number, dj: number) {
   drawGrid();
   updateStatus();
 }
-
-document.getElementById("moveNorth")!.addEventListener(
-  "click",
-  () => movePlayer(1, 0),
-);
-document.getElementById("moveSouth")!.addEventListener(
-  "click",
-  () => movePlayer(-1, 0),
-);
-document.getElementById("moveWest")!.addEventListener(
-  "click",
-  () => movePlayer(0, -1),
-);
-document.getElementById("moveEast")!.addEventListener(
-  "click",
-  () => movePlayer(0, 1),
-);
