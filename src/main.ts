@@ -73,7 +73,6 @@ playerMarker.addTo(map);
 // 6. GAME STATE + STATUS DISPLAY
 // =====================================================
 let heldToken: number | null = null;
-const removedTokens = new Set<string>();
 
 function updateStatus() {
   statusPanelDiv.innerHTML = heldToken === null
@@ -247,7 +246,10 @@ const resetBtn = document.createElement("button");
 resetBtn.innerText = "Reset Game";
 resetBtn.onclick = () => {
   heldToken = null;
-  removedTokens.clear();
+
+  localStorage.removeItem("worldState");
+  for (const key in cellMemory) delete cellMemory[key];
+
   updateStatus();
   drawGrid();
 };
