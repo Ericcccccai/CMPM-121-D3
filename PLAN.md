@@ -152,14 +152,14 @@ Gameplay occurs on a grid aligned with latitude-longitude coordinates and persis
 ### Steps
 
 - [x] Create interface `IPlayerMovement` with methods `moveNorth/…` and `updatePosition()`
-- [ ] Implement `ButtonMovement` class (using existing controls)
-- [ ] Implement `GeolocationMovement` class (using `navigator.geolocation.watchPosition`)
-- [ ] Add Façade controller that switches between movement types based on query string or UI toggle
-- [ ] Implement saveGameState() and loadGameState() with `localStorage`
-- [ ] Add “Start New Game” button to clear storage and reset map
-- [ ] Add runtime toggle between button and geo movement
-- [ ] Verify persistent resume after refresh or tab close/open
-- [ ] Commit: “(D3.d complete)”
+- [x] Implement `ButtonMovement` class (using existing controls)
+- [x] Implement `GeolocationMovement` class (using `navigator.geolocation.watchPosition`)
+- [x] Add Façade controller that switches between movement types based on query string or UI toggle
+- [x] Implement saveGameState() and loadGameState() with `localStorage`
+- [x] Add “Start New Game” button to clear storage and reset map
+- [x] Add runtime toggle between button and geo movement
+- [x] Verify persistent resume after refresh or tab close/open
+- [x] Commit: “(D3.d complete)”
 
 ---
 
@@ -173,10 +173,10 @@ Gameplay occurs on a grid aligned with latitude-longitude coordinates and persis
 
 ### Submission Checklist (per milestone)
 
-- [ ] PLAN.md updated with new progress
-- [ ] Required gameplay and software features present
-- [ ] Code is clean and readable
-- [ ] Meaningful commit messages (including “(D3.x complete)”)
-- [ ] Deployed build works on GitHub Pages
+- [x] PLAN.md updated with new progress
+- [x] Required gameplay and software features present
+- [x] Code is clean and readable
+- [x] Meaningful commit messages (including “(D3.x complete)”)
+- [x] Deployed build works on GitHub Pages
 
 ---
